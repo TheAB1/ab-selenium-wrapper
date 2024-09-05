@@ -15,8 +15,8 @@ from selenium.webdriver.support.select import Select
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium_stealth import stealth
 
-import proxy_extension_manager
-from devices import devices
+import ab_selenium_wrapper.proxy_extension_manager
+from ab_selenium_wrapper.devices import devices
 
 
 class WrappedWebElement:
