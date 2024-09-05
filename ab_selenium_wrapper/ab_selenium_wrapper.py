@@ -1,5 +1,6 @@
 import json
 import os
+import pickle
 import random
 import re
 import time
@@ -344,6 +345,40 @@ class SeleniumWrapper:
             print(f"Cookies loaded from {file_path}")
         else:
             print(f"No cookies found at {file_path}")
+
+    def load_cookies_from_file(self, path):
+        domain = self.driver.current_url.split("//")[-1].split("/")[0]
+        folder_path = os.path.join("./cookies/", domain)
+        file_path = os.path.join(folder_path, path)
+
+
+        if not os.path.exists(file_path):
+            print(f"No cookies found at {file_path}")
+            return
+
+        try:
+            # Detectar el formato según la extensión
+            if path.endswith('.json'):
+                with open(file_path, 'r') as file:
+                    cookies = json.load(file)
+            elif path.endswith('.pkl'):
+                with open(file_path, 'rb') as file:
+                    cookies = pickle.load(file)
+            else:
+                print(f"Error: Format not supported {path}. Allowed formats are '.json' and '.pkl'.")
+                return
+
+            # Añadir cada cookie al navegador
+            for cookie in cookies:
+                # Ajustar el campo 'expiry' si es necesario
+                if 'expiry' in cookie:
+                    cookie['expiry'] = int(cookie['expiry'])
+                self.driver.add_cookie(cookie)
+
+            print(f"Cookies loaded from {file_path}")
+
+        except Exception as e:
+            print(f"An error occurred while loading cookies: {str(e)}")
 
     def upload_image(self, file_input_xpath, image_path):
         file_input = self.find_element_in_all_frames(By.XPATH, file_input_xpath)
