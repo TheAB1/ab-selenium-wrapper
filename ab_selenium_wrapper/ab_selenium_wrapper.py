@@ -7,7 +7,8 @@ import time
 
 import requests
 from selenium import webdriver
-from selenium.common import ElementClickInterceptedException, NoSuchElementException, TimeoutException
+from selenium.common import ElementClickInterceptedException, NoSuchElementException, TimeoutException, \
+    ElementNotInteractableException
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
@@ -158,6 +159,10 @@ class SeleniumWrapper:
         self.timeout = timeout
         self.speed = speed
 
+    def navigate(self, url):
+        self.driver.get(url)
+
+
     def find_element_in_all_frames(self, by, value):
         try:
             return self.driver.find_element(by, value)
@@ -197,6 +202,9 @@ class SeleniumWrapper:
 
         return elements
 
+    def find_element(self, xpath):
+        return self.driver.find_element(By.XPATH, xpath)
+
     def get_number_of_children(self, xpath):
         try:
             parent_element = self.find_element_in_all_frames(By.XPATH, xpath)
@@ -232,7 +240,7 @@ class SeleniumWrapper:
                 return
             print(f"Error: optional element with xpath {xpath} not found.")
             return
-        except ElementClickInterceptedException:
+        except (ElementClickInterceptedException, ElementNotInteractableException):
             self.js_click(xpath)
 
         time.sleep(self.speed)
@@ -347,35 +355,27 @@ class SeleniumWrapper:
             print(f"No cookies found at {file_path}")
 
     def load_cookies_from_file(self, path):
-        domain = self.driver.current_url.split("//")[-1].split("/")[0]
-        folder_path = os.path.join("./cookies/", domain)
-        file_path = os.path.join(folder_path, path)
-
-
-        if not os.path.exists(file_path):
-            print(f"No cookies found at {file_path}")
+        if not os.path.exists(path):
+            print(f"No cookies found at {path}")
             return
 
         try:
-            # Detectar el formato según la extensión
             if path.endswith('.json'):
-                with open(file_path, 'r') as file:
+                with open(path, 'r') as file:
                     cookies = json.load(file)
             elif path.endswith('.pkl'):
-                with open(file_path, 'rb') as file:
+                with open(path, 'rb') as file:
                     cookies = pickle.load(file)
             else:
                 print(f"Error: Format not supported {path}. Allowed formats are '.json' and '.pkl'.")
                 return
 
-            # Añadir cada cookie al navegador
             for cookie in cookies:
-                # Ajustar el campo 'expiry' si es necesario
                 if 'expiry' in cookie:
                     cookie['expiry'] = int(cookie['expiry'])
                 self.driver.add_cookie(cookie)
 
-            print(f"Cookies loaded from {file_path}")
+            print(f"Cookies loaded from {path}")
 
         except Exception as e:
             print(f"An error occurred while loading cookies: {str(e)}")
@@ -392,7 +392,7 @@ class SeleniumWrapper:
         except (NoSuchElementException, TimeoutException):
             print(f"Error: Element with xpath {xpath} not found.")
 
-    def write_text_via_js(self, xpath, text):
+    def type_text_via_js(self, xpath, text):
         try:
             element = self.find_element_in_all_frames(By.XPATH, xpath)
 
